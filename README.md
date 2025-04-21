@@ -92,8 +92,6 @@ Cast votes on the voting app, and watch the results update automatically on the 
 *   **Asynchronous Messaging:** Kafka decouples the voting frontend from the backend worker.
 *   **Database Persistence:** PostgreSQL stores vote data, surviving container restarts via Docker volumes.
 *   **Stateful Frontend Interaction:** Cookies track voters and remember the last vote.
-*   **Real-time UI Updates:** The results page polls the backend for updates (Note: *True* real-time often uses WebSockets, polling is simpler for this demo).
-*   **Dynamic UI Rendering:** The results page visually splits based on vote percentages.
 *   **Multistage Docker Builds:** The Java backend uses a multistage build to create a smaller, more efficient final image.
 
 ## Stopping the App
