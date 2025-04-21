@@ -1,0 +1,93 @@
+networks:
+  # Define a custom network for our microservices
+  voting_app:
+    driver: bridge
+
+volumes:
+  # Define a volume for PostgreSQL data persistence
+  postgres_data:
+
+services:
+  # 1. Voting Frontend (Flask)
+  vote:
+    build: ./vote # Build from the 'vote' directory
+    container_name: vote-app-service
+    ports:
+      # Expose port 5000 on the host mapped to 80 inside the container
+      - "5000:80"
+    environment:
+      # Tell Flask where Kafka is (using the service name 'kafka')
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC=votes
+    networks:
+      - voting_app
+    depends_on:
+      - kafka # Ensure Kafka starts first (basic dependency)
+
+  # 2. Kafka Queue (Single Container)
+  kafka:
+    image: obsidiandynamics/kafka:latest
+    container_name: kafka-queue-service
+    environment:
+      # How other containers connect to Kafka within the network
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      # For single-node setup
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      # Auto-create the 'votes' topic if it doesn't exist
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    networks:
+      - voting_app
+    # Note: No ports exposed to host needed for internal communication
+
+  # 3. Backend Worker (Java/Spring Boot)
+  worker:
+    build: ./worker # Build from the 'backend' directory (uses multistage Dockerfile)
+    container_name: worker-service
+    environment:
+      # Tell Spring Boot where Kafka is
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Database connection details (points to 'db' service)
+      # Make sure these match the POSTGRES_USER/PASSWORD/DB in the 'db' service
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/voting_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - voting_app
+    depends_on:
+      - kafka # Depends on Kafka being available
+      - db    # Depends on the Database being available
+
+  # 4. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-db-service
+    environment:
+      # Define database name, user, and password
+      # CRITICAL: These MUST match the values used in the 'worker' service environment vars
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password # Use secrets in production!
+    volumes:
+      # Persist data using the named volume
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - voting_app
+  
+  result:
+    build: ./result # Build from the 'results-frontend' directory
+    container_name: result-app-service
+    ports:
+      # Expose port 5001 on the host mapped to 80 inside the container
+      - "5001:80"
+    environment:
+      # Essential: Database connection details (using service name 'db')
+      # Make sure these match the POSTGRES_USER/PASSWORD/DB in the 'db' service
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=voting_db
+      - PORT=80 # Optional but good practice: inform the app which port to use inside container
+    networks:
+      - voting_app # Ensure it's on the same network
+    depends_on:
+      - db

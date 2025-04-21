@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cast Your Vote!</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<!-- Store last vote from Flask in a data attribute for easy JS access -->
+<body data-last-vote="{{ last_vote|default('', true) }}">
+    <!-- REMOVED: Container ID Div -->
+    <!-- <div id="container-id"> Served by: ... </div> -->
+
+    <div class="voting-container">
+        <h1>Which do you prefer?</h1>
+        <div class="options">
+            <button id="vote-cats" class="vote-button cats" data-vote="Cats">
+                <span class="icon">🐈</span> Cats
+            </button>
+            <button id="vote-dogs" class="vote-button dogs" data-vote="Dogs">
+                <span class="icon">🐕</span> Dogs
+            </button>
+        </div>
+        <div id="vote-status"></div>
+    </div>
+
+    <script>
+        const buttons = document.querySelectorAll('.vote-button');
+        const statusDiv = document.getElementById('vote-status');
+
+        // Function to update button styles based on selection
+        function updateButtonSelection(selectedVote) {
+            buttons.forEach(btn => {
+                const voteOption = btn.getAttribute('data-vote');
+                btn.classList.remove('selected', 'unselected'); // Clear existing states
+                if (voteOption === selectedVote) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.add('unselected');
+                }
+            });
+        }
+
+        // --- Run this when the page loads ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Read the last vote from the data attribute set by Flask
+            const lastVote = document.body.dataset.lastVote;
+
+            if (lastVote) { // Check if lastVote has a value ('Cats' or 'Dogs')
+                console.log('Previous vote found:', lastVote);
+                updateButtonSelection(lastVote); // Apply styles based on the cookie value
+                statusDiv.textContent = `Your last vote was for ${lastVote}. You can change it.`;
+                statusDiv.style.color = '#555'; // Neutral info color
+            } else {
+                 console.log('No previous vote found in cookie.');
+                 // Optional: Set a default message if no vote found
+                 // statusDiv.textContent = 'Cast your vote!';
+            }
+        });
+        // --- End of page load logic ---
+
+
+        // --- Button click logic (remains mostly the same) ---
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const vote = button.getAttribute('data-vote');
+                statusDiv.textContent = 'Submitting vote...';
+                statusDiv.style.color = '#aaa';
+
+                // Update UI immediately for responsiveness
+                updateButtonSelection(vote);
+
+                fetch('/vote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({'vote': vote})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        statusDiv.textContent = `Vote for ${vote} submitted! You can change your vote.`;
+                        statusDiv.style.color = 'green';
+                        // Visual update already handled above
+                    } else {
+                        statusDiv.textContent = 'Voting failed: ' + (data.message || 'Unknown error');
+                        statusDiv.style.color = 'red';
+                        // Revert visual selection on failure (optional)
+                        // You might want to read the cookie again or just clear styles
+                        buttons.forEach(btn => btn.classList.remove('selected', 'unselected'));
+                        // Consider re-reading the actual last vote from cookie if needed
+                        const previousVote = document.body.dataset.lastVote; // Re-read initial state
+                        if(previousVote) updateButtonSelection(previousVote);
+
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    statusDiv.textContent = 'Voting failed. Could not reach server.';
+                    statusDiv.style.color = 'red';
+                     // Revert visual selection on failure (optional)
+                    buttons.forEach(btn => btn.classList.remove('selected', 'unselected'));
+                     const previousVote = document.body.dataset.lastVote; // Re-read initial state
+                     if(previousVote) updateButtonSelection(previousVote);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

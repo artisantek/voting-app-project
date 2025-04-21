@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Results</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="results-wrapper">
+        <h1>Live Voting Results</h1>
+        <div id="results-container">
+            <div id="cats-results" class="result-panel cats">
+                <div class="content">
+                    <span class="icon">🐈</span>
+                    <span class="percentage" id="cats-percentage">--%</span>
+                    <span class="label">Cats</span>
+                    <span class="count" id="cats-count">( votes)</span>
+                </div>
+            </div>
+            <div id="dogs-results" class="result-panel dogs">
+                 <div class="content">
+                    <span class="icon">🐕</span>
+                    <span class="percentage" id="dogs-percentage">--%</span>
+                    <span class="label">Dogs</span>
+                    <span class="count" id="dogs-count">( votes)</span>
+                </div>
+            </div>
+        </div>
+        <div id="total-votes">Total Votes: --</div>
+        <div id="error-message" style="color: red; margin-top: 10px;"></div>
+    </div>
+
+    <!-- Link to client-side script -->
+    <script src="/script.js"></script>
+</body>
+</html>
