@@ -28,7 +28,7 @@ This project demonstrates these concepts in a simplified way.
 
 The application consists of the following 5 microservices:
 
-![architecture](architecture.png)
+![architecture](architecture.jpg)
 
 1.  **Voting Frontend (`vote`)**:
     *   **Technology:** Python (Flask)
